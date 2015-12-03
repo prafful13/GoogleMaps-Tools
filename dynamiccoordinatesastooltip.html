@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #map {
+            height: 100%;
+        }
+        
+        .tip {
+            position: absolute;
+            padding: 5px;
+            border: 1px solid gray;
+            font-size: 10px;
+            font-family: Verdana;
+            background-color: #fff;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="tip"></div>
+    <script>
+        var map;
+        var mapLoaded = false;
+        var rightclick = false;
+
+        function initMap() {
+            getLocation();
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 8
+            });
+
+            google.maps.event.addListenerOnce(map, 'idle', function() {
+                // do something only the first time the map is loaded
+                mapLoaded = true;
+            });
+
+            google.maps.event.addListener(map, "rightclick", function(event) {
+                if (!rightclick) {
+                    rightclick = true;
+                } else {
+                    rightclick = false;
+                }
+            });
+
+            var tip = $('tip');
+            var overlay = new google.maps.OverlayView();
+            overlay.draw = function() {};
+            overlay.setMap(map);
+
+            $("#map").hover(function() {
+                tip = $(this).nextAll('.tip');
+                if (!rightclick) {
+                    tip.show();
+                } else {
+                    tip.hide();
+                }
+            }, function() {
+                tip.hide();
+            }).mousemove(function(e) {
+                if (mapLoaded) {
+                    if (rightclick) {
+                        tip.hide();
+                    } else {
+                        tip.show();
+                        var mousex = e.pageX + 10; //Get X coodrinates
+                        var mousey = e.pageY + 10; //Get Y coordinates
+                        var tipWidth = tip.width(); //Find width of tooltip
+                        var tipHeight = tip.height(); //Find height of tooltip
+                        //Distance of element from the right edge of viewport
+                        var tipVisX = $(window).width() - (mousex + tipWidth);
+                        //Distance of element from the bottom of viewport
+                        var tipVisY = $(window).height() - (mousey + tipHeight);
+                        if (tipVisX < 10) { //If tooltip exceeds the X coordinate of viewport
+                            mousex = e.pageX - tipWidth - 10;
+                        }
+                        if (tipVisY < 10) { //If tooltip exceeds the Y coordinate of viewport
+                            mousey = e.pageY - tipHeight - 10;
+                        }
+
+                        var coordinates = overlay.getProjection().fromContainerPixelToLatLng(new google.maps.Point(mousex, mousey));
+                        //Absolute position the tooltip according to mouse position
+                        tip.css({
+                            top: mousey,
+                            left: mousex
+                        }).text(coordinates.lat() + ", " + coordinates.lng());
+                    }
+                }
+            });
+        }
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lng = position.coords.longitude;
+            map.setCenter(new google.maps.LatLng(lat, lng));
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCsLfiE7m7DYbGEy0pRDI064D2jfg16DQI&callback=initMap" async defer></script>
+
+
+</body>
+
+</html>
